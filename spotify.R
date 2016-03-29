@@ -146,20 +146,25 @@ dev.off()
 for(i in 1:25){print(largest_airports[i]); print(graph_origin%>%neighbors(i))}
 
 #####################################
+#risk analysis
 
-plot.igraph(
-  x = graph_origin ,layout = lo,vertex.color = "black",
-  vertex.size = 3,vertex.label = NA,
-  add = F, rescale = FALSE
-)
+DISRUPTION = 60
 
+delay_means <- wide[-1]%>%colMeans
+delay_cov <- huge_selected$icov[[7]]%>%solve
 
+new_mu<- delay_means[-20] +
+  delay_cov[,20][-20] *
+  (60-delay_means[-20])/delay_cov[20,20]
+
+#
+#miscellaneous calculations
 
 data %$%
   lm(ARR_DELAY ~ DEP_DELAY) %>%
   summary()
 
-
+#departure/arrivals
 data %$%
   plot(DEP_DELAY %>% log,ARR_DELAY %>% log,pch = 16)
 
@@ -167,37 +172,8 @@ data %>%
   filter(DEP_DELAY == 0) %$%
   hist(ARR_DELAY,breaks = 100)
 
-
+#histograms by day
 data %>%
   ggplot(., aes(x = ARR_DELAY %>% log, fill = DAY_OF_MONTH %>% as.factor)) +
   geom_density(alpha = .3)
 
-ts <-
-  data %>%
-  filter(ORIGIN_AIRPORT_ID == 10397) %>%
-  group_by(time_new) %>%
-  summarise(me = mean(ARR_DELAY)) %>%
-  arrange(time_new)
-
-
-ts %>%
-  plot(.,type = "l")
-spec.pgram
-
-
-x = ts$me %>% log
-plot(x[-1],x[-length(x)])
-
-x[is.na(x)] = 0
-x[x == -Inf] = 0
-lm(x[-length(x)] ~ x[-1]) %>% summary
-
-
-plot(time_new,me %>% log,cex = .1,pch = 16,type = "l")
-
-data %$%
-  lm(ARR_DELAY ~ DEP_DELAY * UNIQUE_CARRIER) %>%
-  summary
-
-data %$%
-  plot(CRS_DEP_TIME,ARR_DELAY %>% log())
